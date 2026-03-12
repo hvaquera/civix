@@ -1,9 +1,0 @@
-{
-  "/not-found": "app/not-found.js",
-  "/page": "app/page.js",
-  "/api/auth/send-otp/route": "app/api/auth/send-otp/route.js",
-  "/api/auth/verify-otp/route": "app/api/auth/verify-otp/route.js",
-  "/(citizen)/onboarding/page": "app/(citizen)/onboarding/page.js",
-  "/(citizen)/registro/page": "app/(citizen)/registro/page.js",
-  "/(citizen)/registro/verificar/page": "app/(citizen)/registro/verificar/page.js"
-}
