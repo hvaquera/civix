@@ -239,55 +239,73 @@ export default function MisReportesPage() {
 
         {/* Reports list */}
         {filteredReports.length > 0 ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {filteredReports.map((report) => {
               const Icon = CATEGORY_ICONS[report.categoryCode] || Construction
+              const iconBg =
+                report.status === 'resuelto' ? 'bg-green-100' :
+                report.status === 'no_procede' ? 'bg-red-100' :
+                report.status === 'en_proceso' ? 'bg-purple-100' :
+                'bg-gray-100'
+              const iconColor =
+                report.status === 'resuelto' ? 'text-green-600' :
+                report.status === 'no_procede' ? 'text-red-600' :
+                report.status === 'en_proceso' ? 'text-purple-600' :
+                'text-gray-500'
+
               return (
-                <Link key={report.id} href={`/mis-reportes/${report.id}`}>
-                  <Card className={cn(
-                    'p-4 hover:shadow-md transition-all active:scale-[0.99]',
-                    report.hasUpdate && 'ring-2 ring-civix-500 ring-offset-2'
+                <Link key={report.id} href={`/mis-reportes/${report.id}`}className="block">
+                  <div className={cn(
+                    'bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-[0.99] overflow-hidden',
+                    report.hasUpdate && 'border-civix-200 shadow-civix-100'
                   )}>
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        'p-3 rounded-xl flex-shrink-0',
-                        report.status === 'resuelto' ? 'bg-green-100' :
-                        report.status === 'no_procede' ? 'bg-red-100' :
-                        report.status === 'en_proceso' ? 'bg-purple-100' :
-                        'bg-gray-100'
-                      )}>
-                        <Icon className={cn(
-                          'w-5 h-5',
-                          report.status === 'resuelto' ? 'text-green-600' :
-                          report.status === 'no_procede' ? 'text-red-600' :
-                          report.status === 'en_proceso' ? 'text-purple-600' :
-                          'text-gray-600'
-                        )} />
+                    {/* Update indicator bar */}
+                    {report.hasUpdate && (
+                      <div className="h-0.5 bg-gradient-to-r from-civix-400 to-civix-600" />
+                    )}
+
+                    <div className="p-4 flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={cn('p-3 rounded-xl flex-shrink-0 mt-0.5', iconBg)}>
+                        <Icon className={cn('w-5 h-5', iconColor)} />
                       </div>
+
+                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold text-gray-900">
+                        {/* Top row: category + badge */}
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-base leading-tight">
                             {report.category}
                           </span>
+                          {report.hasUpdate && (
+                            <span className="w-2 h-2 bg-civix-500 rounded-full animate-pulse flex-shrink-0" />
+                          )}
+                        </div>
+
+                        {/* Badge */}
+                        <div className="mb-2">
                           <Badge variant={STATUS_VARIANTS[report.status]}>
                             {STATUS_CITIZEN_LABELS[report.status]}
                           </Badge>
-                          {report.hasUpdate && (
-                            <span className="w-2 h-2 bg-civix-500 rounded-full animate-pulse" />
-                          )}
                         </div>
-                        <p className="text-sm text-gray-600 truncate">
+
+                        {/* Address */}
+                        <p className="text-sm text-gray-500 truncate mb-2">
                           {report.address}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1.5">
-                          <span className="font-mono">{report.folio}</span>
-                          <span className="mx-2">•</span>
-                          {formatRelativeTime(report.created_at)}
-                        </p>
+
+                        {/* Footer: folio + time */}
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                          <span className="font-mono tracking-tight">{report.folio}</span>
+                          <span>·</span>
+                          <span>{formatRelativeTime(report.created_at)}</span>
+                        </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
+
+                      {/* Arrow */}
+                      <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0 mt-1" />
                     </div>
-                  </Card>
+                  </div>
                 </Link>
               )
             })}
