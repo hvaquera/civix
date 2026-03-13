@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,17 +13,23 @@ import {
   MapPin,
   CheckCircle,
   UserPlus,
-  StickyNote,
-  ExternalLink,
-  Clock,
-  FileText,
   Plus,
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDateTime, formatRelativeTime } from '@/lib/utils'
 
-// Mock data
+// Dynamic import — Leaflet can't render server-side
+const IssueMap = dynamic(() => import('@/components/panel/IssueMap'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full flex items-center justify-center bg-gray-50 rounded-lg" style={{ minHeight: 350 }}>
+      <p className="text-gray-400">Cargando mapa...</p>
+    </div>
+  ),
+})
+
+// ─── Mock data ──────────────────────────────────────────────────
 const mockIssue = {
   id: '1',
   title: 'Baches múltiples en Centro',
@@ -38,11 +45,11 @@ const mockIssue = {
 }
 
 const mockChildReports = [
-  { id: '1', folio: 'CIV-2024-00456', address: 'Av. Constitución 500', status: 'asignado', created_at: '2024-01-14T08:00:00Z' },
-  { id: '2', folio: 'CIV-2024-00455', address: 'Calle Morelos 123', status: 'asignado', created_at: '2024-01-14T09:00:00Z' },
-  { id: '3', folio: 'CIV-2024-00454', address: 'Calle Zaragoza 200', status: 'asignado', created_at: '2024-01-14T10:00:00Z' },
-  { id: '4', folio: 'CIV-2024-00453', address: 'Av. Juárez 350', status: 'asignado', created_at: '2024-01-14T11:00:00Z' },
-  { id: '5', folio: 'CIV-2024-00452', address: 'Calle Hidalgo 180', status: 'asignado', created_at: '2024-01-14T12:00:00Z' },
+  { id: '1', folio: 'CIV-2024-00456', address: 'Av. Constitución 500', status: 'asignado', created_at: '2024-01-14T08:00:00Z', lat: 25.6714, lng: -100.3096 },
+  { id: '2', folio: 'CIV-2024-00455', address: 'Calle Morelos 123',    status: 'asignado', created_at: '2024-01-14T09:00:00Z', lat: 25.6725, lng: -100.3120 },
+  { id: '3', folio: 'CIV-2024-00454', address: 'Calle Zaragoza 200',   status: 'asignado', created_at: '2024-01-14T10:00:00Z', lat: 25.6698, lng: -100.3078 },
+  { id: '4', folio: 'CIV-2024-00453', address: 'Av. Juárez 350',       status: 'asignado', created_at: '2024-01-14T11:00:00Z', lat: 25.6740, lng: -100.3145 },
+  { id: '5', folio: 'CIV-2024-00452', address: 'Calle Hidalgo 180',    status: 'asignado', created_at: '2024-01-14T12:00:00Z', lat: 25.6680, lng: -100.3110 },
 ]
 
 const mockTimeline = [
@@ -59,6 +66,7 @@ const STATUS_COLORS: Record<string, string> = {
   resuelto: 'bg-green-100 text-green-700',
 }
 
+// ─── Component ──────────────────────────────────────────────────
 export default function IssueDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -117,8 +125,15 @@ export default function IssueDetailPage() {
               <CardTitle className="text-lg">Mapa de reportes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                Mapa con {mockChildReports.length} marcadores
+              <div style={{ height: 400 }} className="rounded-lg overflow-hidden">
+                <IssueMap 
+                  markers={mockChildReports.map(r => ({
+                    id: r.id,
+                    label: `${r.folio} — ${r.address}`,
+                    lat: r.lat,
+                    lng: r.lng,
+                  }))}
+                />
               </div>
             </CardContent>
           </Card>
@@ -235,10 +250,10 @@ export default function IssueDetailPage() {
         </div>
       </div>
 
-      {/* Resolve Drawer */}
+      {/* ──── Resolve Drawer ──── */}
       {showResolveDrawer && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end">
-          <div className="w-full max-w-md bg-white h-full overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={() => setShowResolveDrawer(false)}>
+          <div className="w-full max-w-md bg-white h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b sticky top-0 bg-white">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Resolver issue completo</h3>
@@ -260,7 +275,7 @@ export default function IssueDetailPage() {
                 <textarea 
                   rows={4}
                   placeholder="Describe qué se hizo para resolver el problema..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-civix-500"
                 />
               </div>
               <div>
@@ -281,11 +296,16 @@ export default function IssueDetailPage() {
         </div>
       )}
 
-      {/* Add Report Modal */}
+      {/* ──── Add Report Modal ──── */}
       {showAddReportModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Agregar reporte al issue</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddReportModal(false)}>
+          <Card className="w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Agregar reporte al issue</h3>
+              <button onClick={() => setShowAddReportModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,7 +314,7 @@ export default function IssueDetailPage() {
                 <input
                   type="text"
                   placeholder="CIV-2024-..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-civix-500"
                 />
               </div>
               <p className="text-sm text-gray-500">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/utils'
 
-// Mock data
+// Mock data — includes reabierto entries so all dashboard cards show results
 const mockReports = [
   { id: '1', folio: 'CIV-2024-00456', category: 'Baches', colonia: 'Centro', address: 'Av. Constitución 500', status: 'nuevo', internalStatus: 'sin_asignar', area: null, assignee: null, slaStatus: 'expired', priority: 'alta', created_at: '2024-01-15T08:00:00Z' },
   { id: '2', folio: 'CIV-2024-00455', category: 'Alumbrado', colonia: 'Centro', address: 'Calle Morelos 123', status: 'en_proceso', internalStatus: 'asignado', area: 'Servicios Públicos', assignee: 'Juan Pérez', slaStatus: 'warning', priority: 'media', created_at: '2024-01-15T10:00:00Z' },
@@ -33,6 +33,9 @@ const mockReports = [
   { id: '6', folio: 'CIV-2024-00451', category: 'Baches', colonia: 'Centro', address: 'Calle Zaragoza 789', status: 'resuelto', internalStatus: 'resuelto', area: 'Servicios Públicos', assignee: 'Juan Pérez', slaStatus: 'ok', priority: 'alta', created_at: '2024-01-14T14:00:00Z' },
   { id: '7', folio: 'CIV-2024-00450', category: 'Alumbrado', colonia: 'Cumbres', address: 'Av. Lincoln 1200', status: 'no_procede', internalStatus: 'no_procede', area: 'Servicios Públicos', assignee: 'Ana Martínez', slaStatus: 'ok', priority: 'baja', created_at: '2024-01-14T10:00:00Z' },
   { id: '8', folio: 'CIV-2024-00449', category: 'Drenaje', colonia: 'Centro', address: 'Calle Hidalgo 234', status: 'en_proceso', internalStatus: 'esperando_material', area: 'Agua y Drenaje', assignee: 'Roberto Sánchez', slaStatus: 'expired', priority: 'alta', created_at: '2024-01-13T16:00:00Z' },
+  { id: '9', folio: 'CIV-2024-00448', category: 'Baches', colonia: 'Cumbres', address: 'Av. Lincoln 900', status: 'recibido', internalStatus: 'sin_asignar', area: null, assignee: null, slaStatus: 'warning', priority: 'alta', created_at: '2024-01-13T12:00:00Z' },
+  { id: '10', folio: 'CIV-2024-00447', category: 'Alumbrado', colonia: 'Del Valle', address: 'Calle Río Amazonas 345', status: 'revision_solicitada', internalStatus: 'reabierto', area: 'Servicios Públicos', assignee: 'Juan Pérez', slaStatus: 'expired', priority: 'media', created_at: '2024-01-12T09:00:00Z' },
+  { id: '11', folio: 'CIV-2024-00446', category: 'Basura', colonia: 'Mitras Centro', address: 'Calle Platón 200', status: 'revision_solicitada', internalStatus: 'reabierto', area: 'Limpia', assignee: 'María García', slaStatus: 'warning', priority: 'media', created_at: '2024-01-12T14:00:00Z' },
 ]
 
 const STATUS_OPTIONS = [
@@ -43,6 +46,7 @@ const STATUS_OPTIONS = [
   { value: 'en_campo', label: 'En campo' },
   { value: 'resuelto', label: 'Resuelto' },
   { value: 'no_procede', label: 'No procede' },
+  { value: 'reabierto', label: 'Reabierto' },
 ]
 
 const CATEGORY_OPTIONS = [
@@ -95,15 +99,30 @@ const PRIORITY_COLORS: Record<string, string> = {
   baja: 'bg-gray-400',
 }
 
-export default function ReportesPage() {
+// ─── Dashboard → Reportes filter mapping ───────────────────────
+// Dashboard cards pass ?filter=unassigned|expiring|expired|reopened
+// We translate those to actual status/sla filter values
+const DASHBOARD_FILTER_MAP: Record<string, { status?: string; sla?: string }> = {
+  unassigned: { status: 'sin_asignar' },
+  expiring:   { sla: 'warning' },
+  expired:    { sla: 'expired' },
+  reopened:   { status: 'reabierto' },
+}
+
+function ReportesContent() {
   const searchParams = useSearchParams()
-  const initialFilter = searchParams.get('filter') || ''
+  const dashboardFilter = searchParams.get('filter') || ''
+
+  // Resolve dashboard shortcut → real filter values
+  const mapped = DASHBOARD_FILTER_MAP[dashboardFilter]
+  const initStatus = mapped?.status || 'all'
+  const initSla    = mapped?.sla    || 'all'
 
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState(initialFilter || 'all')
+  const [statusFilter, setStatusFilter] = useState(initStatus)
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [areaFilter, setAreaFilter] = useState('all')
-  const [slaFilter, setSlaFilter] = useState('all')
+  const [slaFilter, setSlaFilter] = useState(initSla)
   const [selectedReports, setSelectedReports] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -369,5 +388,14 @@ export default function ReportesPage() {
         </div>
       </Card>
     </div>
+  )
+}
+
+// Wrap in Suspense because useSearchParams requires it in Next.js 14
+export default function ReportesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando reportes...</div>}>
+      <ReportesContent />
+    </Suspense>
   )
 }

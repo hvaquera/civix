@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,8 +14,9 @@ import {
   Trash2,
   Users,
   FileText,
-  ChevronRight
+  X
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // Mock data
 const mockAreas = [
@@ -66,6 +67,52 @@ const mockAreas = [
   },
 ]
 
+// Click-based dropdown component (no hover gap issues)
+function AreaMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button 
+        onClick={() => setOpen(!open)} 
+        className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border z-20 py-1">
+          <button 
+            onClick={() => { onEdit(); setOpen(false) }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            Editar
+          </button>
+          <button 
+            onClick={() => { onDelete(); setOpen(false) }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AreasPage() {
   const [search, setSearch] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -75,6 +122,14 @@ export default function AreasPage() {
     area.name.toLowerCase().includes(search.toLowerCase()) ||
     area.manager.toLowerCase().includes(search.toLowerCase())
   )
+
+  const handleDelete = (area: typeof mockAreas[0]) => {
+    if (area.activeReports > 0) {
+      toast.error(`No se puede eliminar "${area.name}" — tiene ${area.activeReports} reportes activos. Reasígnalos primero.`)
+    } else {
+      toast.success(`Área "${area.name}" eliminada`)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -122,24 +177,10 @@ export default function AreasPage() {
                     <p className="text-sm text-gray-500">{area.manager}</p>
                   </div>
                 </div>
-                <div className="relative group">
-                  <button className="p-1 text-gray-400 hover:text-gray-600">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border hidden group-hover:block z-10">
-                    <button 
-                      onClick={() => setEditingArea(area)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      Editar
-                    </button>
-                    <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-                      <Trash2 className="w-3 h-3" />
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
+                <AreaMenu 
+                  onEdit={() => setEditingArea(area)} 
+                  onDelete={() => handleDelete(area)} 
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4 py-3 border-t border-b mb-3">
@@ -181,11 +222,16 @@ export default function AreasPage() {
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingArea) && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingArea ? 'Editar área' : 'Nueva área'}
-            </h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowCreateModal(false); setEditingArea(null) }}>
+          <Card className="w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                {editingArea ? 'Editar área' : 'Nueva área'}
+              </h3>
+              <button onClick={() => { setShowCreateModal(false); setEditingArea(null) }} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -232,7 +278,7 @@ export default function AreasPage() {
                   {['#3B82F6', '#10B981', '#06B6D4', '#84CC16', '#EF4444', '#8B5CF6'].map((color) => (
                     <button
                       key={color}
-                      className="w-8 h-8 rounded-full border-2 border-transparent hover:border-gray-400"
+                      className="w-8 h-8 rounded-full border-2 border-transparent hover:border-gray-400 transition-colors"
                       style={{ backgroundColor: color }}
                     />
                   ))}
@@ -249,7 +295,11 @@ export default function AreasPage() {
               >
                 Cancelar
               </Button>
-              <Button>
+              <Button onClick={() => {
+                toast.success(editingArea ? `Área "${editingArea.name}" actualizada` : 'Área creada')
+                setShowCreateModal(false)
+                setEditingArea(null)
+              }}>
                 {editingArea ? 'Guardar cambios' : 'Crear área'}
               </Button>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,6 +66,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [dateRange, setDateRange] = useState('7d')
 
   return (
@@ -159,9 +161,13 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {priorityQueue.map((report) => (
-                    <tr key={report.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr 
+                      key={report.id} 
+                      className="border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/panel/reportes/${report.id}`)}
+                    >
                       <td className="py-3 px-2">
-                        <span className="font-mono text-gray-900">{report.folio}</span>
+                        <span className="font-mono text-civix-600 font-medium">{report.folio}</span>
                       </td>
                       <td className="py-3 px-2">
                         <Badge className={STATUS_COLORS[report.status]}>
@@ -181,11 +187,7 @@ export default function DashboardPage() {
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        <Link href={`/panel/reportes/${report.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <ChevronRight className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
                       </td>
                     </tr>
                   ))}

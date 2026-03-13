@@ -9,6 +9,10 @@ import {
   FileText, Clock, CheckCircle, Users, MapPin
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Legend
+} from 'recharts'
 
 const TABS = [
   { id: 'summary', label: 'Resumen' },
@@ -46,6 +50,41 @@ const coloniaStats = [
   { name: 'Cumbres', count: 123 },
   { name: 'Mitras Centro', count: 98 },
   { name: 'Del Valle', count: 87 },
+]
+
+// ─── Chart data ──────────────────────────────────────────
+const trendData = [
+  { day: '1 Ene', reportes: 38, resueltos: 32 },
+  { day: '2 Ene', reportes: 42, resueltos: 35 },
+  { day: '3 Ene', reportes: 35, resueltos: 33 },
+  { day: '4 Ene', reportes: 50, resueltos: 41 },
+  { day: '5 Ene', reportes: 47, resueltos: 44 },
+  { day: '6 Ene', reportes: 28, resueltos: 30 },
+  { day: '7 Ene', reportes: 22, resueltos: 25 },
+  { day: '8 Ene', reportes: 44, resueltos: 38 },
+  { day: '9 Ene', reportes: 52, resueltos: 42 },
+  { day: '10 Ene', reportes: 48, resueltos: 45 },
+  { day: '11 Ene', reportes: 55, resueltos: 48 },
+  { day: '12 Ene', reportes: 41, resueltos: 40 },
+  { day: '13 Ene', reportes: 30, resueltos: 35 },
+  { day: '14 Ene', reportes: 25, resueltos: 28 },
+  { day: '15 Ene', reportes: 46, resueltos: 42 },
+]
+
+const comparativeMonthData = [
+  { category: 'Baches', este_mes: 345, mes_anterior: 298 },
+  { category: 'Alumbrado', este_mes: 287, mes_anterior: 310 },
+  { category: 'Basura', este_mes: 234, mes_anterior: 215 },
+  { category: 'Agua', este_mes: 178, mes_anterior: 192 },
+  { category: 'Parques', este_mes: 112, mes_anterior: 95 },
+]
+
+const comparativeAreaData = [
+  { area: 'Serv. Públicos', total: 456, resueltos: 412, pendientes: 44 },
+  { area: 'Limpia', total: 234, resueltos: 221, pendientes: 13 },
+  { area: 'Agua y Drenaje', total: 178, resueltos: 156, pendientes: 22 },
+  { area: 'Parques', total: 112, resueltos: 98, pendientes: 14 },
+  { area: 'Seguridad', total: 68, resueltos: 55, pendientes: 13 },
 ]
 
 export default function MetricasPage() {
@@ -173,15 +212,41 @@ export default function MetricasPage() {
             </Card>
           </div>
 
-          {/* Trend chart placeholder */}
+          {/* Trend chart — Recharts */}
           <Card>
             <CardHeader>
               <CardTitle>Tendencia de reportes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                Gráfica de línea con tendencia de reportes por día
-              </div>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="reportes" 
+                    name="Nuevos"
+                    stroke="#0ea5e9" 
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="resueltos" 
+                    name="Resueltos"
+                    stroke="#22c55e" 
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
@@ -247,7 +312,7 @@ export default function MetricasPage() {
         </div>
       )}
 
-      {/* Comparative Tab */}
+      {/* Comparative Tab — Recharts */}
       {activeTab === 'comparative' && (
         <div className="space-y-6">
           <Card>
@@ -255,9 +320,19 @@ export default function MetricasPage() {
               <CardTitle>Comparativo por período</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                Gráfica comparativa: Este mes vs mes anterior
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={comparativeMonthData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="category" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                  />
+                  <Legend />
+                  <Bar dataKey="este_mes" name="Este mes" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mes_anterior" name="Mes anterior" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
@@ -266,9 +341,19 @@ export default function MetricasPage() {
               <CardTitle>Comparativo por área</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                Gráfica de barras comparando áreas
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={comparativeAreaData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+                  <YAxis dataKey="area" type="category" tick={{ fontSize: 12 }} stroke="#9ca3af" width={110} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13 }}
+                  />
+                  <Legend />
+                  <Bar dataKey="resueltos" name="Resueltos" fill="#22c55e" radius={[0, 4, 4, 0]} stackId="a" />
+                  <Bar dataKey="pendientes" name="Pendientes" fill="#f59e0b" radius={[0, 4, 4, 0]} stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
