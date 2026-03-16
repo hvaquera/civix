@@ -98,7 +98,7 @@ export default function TerritorialPage() {
               district_number: f.properties.district_number,
               total_supporters: f.properties.total_supporters || 0,
               total_operators: f.properties.total_operators || 0,
-              coverage_pct: f.properties.coverage_pct || 0,
+              coverage_pct: f.properties.coverage_pct || 0, estimated_houses: f.properties.estimated_houses || 0, total_contacts: f.properties.total_contacts || 0, lista_nominal: f.properties.lista_nominal || 0,
               coordinates: f.geometry.coordinates[0], // First ring of polygon
             }));
 

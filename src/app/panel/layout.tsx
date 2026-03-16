@@ -17,7 +17,9 @@ import {
   X,
   ChevronDown,
   LogOut,
-  Map
+  Map,
+  Brain,
+  Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +28,8 @@ const navItems = [
   { href: '/panel/reportes', icon: FileText, label: 'Reportes' },
   { href: '/panel/issues', icon: Layers, label: 'Issues agrupados' },
   { href: '/panel/territorial', icon: Map, label: 'Mapa Territorial' },
+  { href: '/panel/inteligencia', icon: Brain, label: 'Inteligencia IA' },
+  { href: '/panel/copilot', icon: Sparkles, label: 'Copilot Electoral' },
   { href: '/panel/areas', icon: Building2, label: 'Áreas' },
   { href: '/panel/usuarios', icon: Users, label: 'Usuarios' },
   { href: '/panel/configuracion', icon: Settings, label: 'Configuración' },

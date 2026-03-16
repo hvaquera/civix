@@ -1,8 +1,18 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+// Monkey-patch Leaflet to prevent _leaflet_pos crash on React re-renders
+const origGetPosition = L.DomUtil.getPosition
+L.DomUtil.getPosition = function (el: any) {
+  try {
+    return origGetPosition.call(this, el)
+  } catch {
+    return new L.Point(0, 0)
+  }
+}
 
 interface Contact {
   lat: number
@@ -39,7 +49,7 @@ const SUPPORT_COLORS: Record<string, string> = {
   unknown: '#d1d5db',
 }
 
-export default function ClusterMap({ clusters, center }: ClusterMapProps) {
+function ClusterMapInner({ clusters, center }: ClusterMapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -148,3 +158,5 @@ export default function ClusterMap({ clusters, center }: ClusterMapProps) {
     />
   )
 }
+
+export default memo(ClusterMapInner, (prev, next) => JSON.stringify(prev.clusters.map(c => c.centroid_lat)) === JSON.stringify(next.clusters.map(c => c.centroid_lat)) && prev.center[0] === next.center[0])

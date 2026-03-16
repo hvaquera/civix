@@ -5,45 +5,29 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
 
-interface INEData {
-  // Datos personales
-  clave_elector: string | null
-  curp: string | null
-  nombre: string | null
-  apellido_paterno: string | null
-  apellido_materno: string | null
-  fecha_nacimiento: string | null
-  sexo: 'M' | 'F' | null
-  
-  // Domicilio
-  calle: string | null
-  numero_exterior: string | null
-  numero_interior: string | null
-  colonia: string | null
-  codigo_postal: string | null
-  municipio: string | null
-  estado: string | null
-  
-  // Datos electorales
-  seccion: string | null
-  vigencia: string | null
-  año_registro: string | null
-  
-  // Confianza por campo
-  confidence: Record<string, number>
-}
-
 const SYSTEM_PROMPT = `Eres un experto en extracción de datos de credenciales INE (Instituto Nacional Electoral) de México.
 
-Tu tarea es extraer TODOS los datos visibles de las imágenes de INE que te proporcionen.
+PRIMERA TAREA — VALIDACIÓN:
+Antes de extraer datos, VERIFICA que la imagen sea realmente una credencial INE/IFE mexicana. 
+Indicadores de INE válida:
+- Texto "INSTITUTO NACIONAL ELECTORAL" o "INSTITUTO FEDERAL ELECTORAL"
+- Texto "CREDENCIAL PARA VOTAR"
+- Escudo nacional mexicano
+- Formato de tarjeta con foto, nombre, domicilio, sección electoral
+- Código de barras (reverso)
+
+Si la imagen NO es una INE (es una foto random, un documento diferente, una selfie, etc.), responde EXACTAMENTE:
+{"is_valid_ine": false, "rejection_reason": "breve explicación de por qué no es INE"}
+
+Si ES una INE válida, procede a extraer datos.
 
 ESTRUCTURA DE LA INE MEXICANA:
-- FRENTE: Tiene la foto del ciudadano. Arriba dice "INSTITUTO NACIONAL ELECTORAL" y "CREDENCIAL PARA VOTAR". 
-  Contiene: nombre completo (en una o dos líneas), domicilio, clave de elector, CURP, fecha de nacimiento, sexo, sección, vigencia.
+- FRENTE: Foto del ciudadano. Arriba dice "INSTITUTO NACIONAL ELECTORAL" y "CREDENCIAL PARA VOTAR". 
+  Contiene: nombre completo, domicilio, clave de elector, CURP, fecha de nacimiento, sexo, sección, vigencia.
   El NOMBRE aparece después de "NOMBRE" y está en MAYÚSCULAS.
-  El DOMICILIO aparece después de "DOMICILIO" y contiene: calle, número, colonia, código postal, municipio y estado.
+  El DOMICILIO contiene: calle, número, colonia, código postal, municipio y estado.
 
-- REVERSO: Contiene el código de barras, la firma, y datos adicionales.
+- REVERSO: Código de barras, firma, datos adicionales.
 
 REGLAS CRÍTICAS:
 1. El NOMBRE siempre está separado de los APELLIDOS. En INEs modernas:
@@ -51,31 +35,27 @@ REGLAS CRÍTICAS:
    - Segunda línea: NOMBRE(S)
    
 2. El DOMICILIO sigue este formato típico:
-   - "C [nombre de calle] [número]" o "AV [nombre] [número]" = calle y número
-   - La COLONIA aparece después, usualmente precedida por "COL" o sola
-   - El CP es un número de 5 dígitos
-   - El MUNICIPIO y ESTADO aparecen al final
+   - "C [nombre de calle] [número]" o "AV [nombre] [número]"
+   - La COLONIA usualmente precedida por "COL" o sola
+   - CP es un número de 5 dígitos
+   - MUNICIPIO y ESTADO al final
 
-3. Si dice "DOMICILIO CONOCIDO" significa que no hay calle/número específico (zona rural).
-
-4. La SECCIÓN ELECTORAL es un número de 4 dígitos que aparece en el frente.
-
+3. Si dice "DOMICILIO CONOCIDO" = zona rural, no hay calle/número.
+4. La SECCIÓN ELECTORAL es un número de 4 dígitos.
 5. Extrae exactamente lo que ves, sin inventar datos.
-6. Si un campo no es legible o no está presente, devuelve null.
+6. Si un campo no es legible, devuelve null.
 7. Los nombres van en MAYÚSCULAS tal como aparecen.
 
-Responde ÚNICAMENTE con un objeto JSON válido, sin explicaciones adicionales ni markdown.`
+Responde ÚNICAMENTE con un objeto JSON válido, sin explicaciones ni markdown.`
 
-const EXTRACTION_PROMPT = `Analiza esta(s) imagen(es) de INE mexicana y extrae todos los datos visibles.
+const EXTRACTION_PROMPT = `Analiza esta(s) imagen(es).
 
-INSTRUCCIONES:
-1. Identifica primero si es el FRENTE o REVERSO de la INE
-2. Extrae los datos en el orden en que aparecen
-3. Para el NOMBRE: separa claramente nombre(s) de apellidos
-4. Para el DOMICILIO: identifica cada componente (calle, número, colonia, CP, municipio, estado)
+PASO 1: ¿Es una credencial INE/IFE mexicana real? Si NO lo es, responde:
+{"is_valid_ine": false, "rejection_reason": "explicación"}
 
-Devuelve un JSON con esta estructura exacta:
+PASO 2: Si SÍ es INE, extrae todos los datos y responde:
 {
+  "is_valid_ine": true,
   "clave_elector": "string de 18 caracteres o null",
   "curp": "string de 18 caracteres o null",
   "nombre": "solo el/los nombre(s) de pila, sin apellidos",
@@ -83,13 +63,13 @@ Devuelve un JSON con esta estructura exacta:
   "apellido_materno": "segundo apellido",
   "fecha_nacimiento": "YYYY-MM-DD o null",
   "sexo": "M o F o null",
-  "calle": "nombre de la calle SIN número (ej: 'AV CONSTITUCION', 'C MORELOS')",
+  "calle": "nombre de la calle SIN número",
   "numero_exterior": "número de casa/edificio",
   "numero_interior": "depto/interior si existe, o null",
-  "colonia": "nombre de la colonia SIN el prefijo 'COL'",
+  "colonia": "nombre de la colonia SIN prefijo COL",
   "codigo_postal": "5 dígitos",
   "municipio": "nombre del municipio",
-  "estado": "nombre del estado (ej: 'NUEVO LEON', 'JALISCO')",
+  "estado": "nombre del estado",
   "seccion": "número de 4 dígitos de la sección electoral",
   "vigencia": "año de vigencia",
   "año_registro": "año en que se registró",
@@ -99,8 +79,6 @@ Devuelve un JSON con esta estructura exacta:
     "seccion": 0.0-1.0
   }
 }
-
-IMPORTANTE: Si ves "DOMICILIO CONOCIDO" en lugar de calle y número, pon eso en "calle" y deja "numero_exterior" como null.
 
 Solo devuelve el JSON, nada más.`
 
@@ -117,43 +95,31 @@ export async function POST(request: NextRequest) {
     })
 
     if (!frontImage) {
-      console.log('[OCR API] Error: No se recibió imagen frontal')
       return NextResponse.json(
         { error: 'Se requiere al menos la imagen frontal de la INE' },
         { status: 400 }
       )
     }
 
-    // Preparar imágenes para Claude
+    // Prepare images for Claude
     const images: Anthropic.ImageBlockParam[] = []
 
-    // Procesar imagen frontal
     const frontBase64 = frontImage.replace(/^data:image\/\w+;base64,/, '')
     images.push({
       type: 'image',
-      source: {
-        type: 'base64',
-        media_type: 'image/jpeg',
-        data: frontBase64,
-      },
+      source: { type: 'base64', media_type: 'image/jpeg', data: frontBase64 },
     })
 
-    // Procesar imagen trasera si existe
     if (backImage) {
       const backBase64 = backImage.replace(/^data:image\/\w+;base64,/, '')
       images.push({
         type: 'image',
-        source: {
-          type: 'base64',
-          media_type: 'image/jpeg',
-          data: backBase64,
-        },
+        source: { type: 'base64', media_type: 'image/jpeg', data: backBase64 },
       })
     }
 
     console.log('[OCR API] Llamando a Claude Vision...')
 
-    // Llamar a Claude Vision
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
@@ -161,55 +127,51 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: [
-            ...images,
-            {
-              type: 'text',
-              text: EXTRACTION_PROMPT,
-            },
-          ],
+          content: [...images, { type: 'text', text: EXTRACTION_PROMPT }],
         },
       ],
     })
 
     console.log('[OCR API] Respuesta de Claude recibida')
 
-    // Extraer el texto de la respuesta
     const textContent = response.content.find((c) => c.type === 'text')
     if (!textContent || textContent.type !== 'text') {
       throw new Error('No se recibió respuesta de texto')
     }
 
-    // Parsear JSON
-    let ineData: INEData
+    let ineData: any
     try {
-      // Limpiar posibles caracteres extra
-      const cleanJson = textContent.text
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim()
+      const cleanJson = textContent.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       ineData = JSON.parse(cleanJson)
-      console.log('[OCR API] Datos extraídos:', {
-        nombre: ineData.nombre,
-        municipio: ineData.municipio,
-        seccion: ineData.seccion
-      })
     } catch (parseError) {
-      console.error('[OCR API] Error parsing OCR response:', textContent.text)
+      console.error('[OCR API] Error parsing:', textContent.text)
       throw new Error('No se pudo procesar la respuesta del OCR')
     }
 
-    // Validar que el municipio sea del área de servicio (Monterrey)
-    const validMunicipios = ['MONTERREY', 'GUADALUPE', 'SAN NICOLÁS DE LOS GARZA', 'APODACA', 'SANTA CATARINA', 'SAN PEDRO GARZA GARCÍA', 'GENERAL ESCOBEDO']
-    const municipioNormalizado = ineData.municipio?.toUpperCase().trim() || ''
-    const isValidMunicipio = validMunicipios.some(m => 
-      municipioNormalizado.includes(m) || m.includes(municipioNormalizado)
-    )
+    // Check if image was rejected as non-INE
+    if (ineData.is_valid_ine === false) {
+      console.log('[OCR API] ❌ Imagen rechazada:', ineData.rejection_reason)
+      return NextResponse.json({
+        success: false,
+        is_valid_ine: false,
+        rejection_reason: ineData.rejection_reason || 'La imagen no parece ser una credencial INE válida',
+      }, { status: 422 })
+    }
 
-    console.log('[OCR API] ✅ OCR completado exitosamente')
+    console.log('[OCR API] ✅ INE válida, datos extraídos:', {
+      nombre: ineData.nombre,
+      municipio: ineData.municipio,
+      seccion: ineData.seccion
+    })
+
+    // Validate municipio
+    const validMunicipios = ['MONTERREY', 'GUADALUPE', 'SAN NICOLÁS DE LOS GARZA', 'SAN NICOLAS DE LOS GARZA', 'APODACA', 'SANTA CATARINA', 'SAN PEDRO GARZA GARCÍA', 'SAN PEDRO GARZA GARCIA', 'GENERAL ESCOBEDO', 'GARCIA', 'JUAREZ', 'SANTIAGO', 'CADEREYTA']
+    const municipioNorm = ineData.municipio?.toUpperCase().trim() || ''
+    const isValidMunicipio = validMunicipios.some(m => municipioNorm.includes(m) || m.includes(municipioNorm))
 
     return NextResponse.json({
       success: true,
+      is_valid_ine: true,
       data: ineData,
       validation: {
         isValidMunicipio,
@@ -220,10 +182,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[OCR API] ❌ Error:', error)
     return NextResponse.json(
-      { 
-        error: 'Error procesando la INE',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Error procesando la INE', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

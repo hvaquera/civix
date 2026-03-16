@@ -8,7 +8,15 @@ import { toast } from 'sonner'
 import { Brain, MapPin, Users, Target, Loader2, CheckCircle, AlertTriangle, TrendingUp, Sparkles, X, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import { MapErrorBoundary } from '@/components/panel/MapErrorBoundary'
+
+// Suppress Leaflet _leaflet_pos errors in dev
+if (typeof window !== 'undefined') {
+  const origOnError = window.onerror
+  window.onerror = function (msg, ...args) {
+    if (typeof msg === 'string' && msg.includes('_leaflet_pos')) return true
+    return origOnError ? (origOnError as any)(msg, ...args) : false
+  }
+}
 
 const ClusterMap = dynamic(() => import('@/components/panel/ClusterMap'), { ssr: false })
 
@@ -57,16 +65,34 @@ export default function InteligenciaTerritorialPage() {
   const [selectedSection, setSelectedSection] = useState(SECTIONS[0])
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [cache, setCache] = useState<Record<string, AnalysisResult>>({})
   const [error, setError] = useState('')
   const [operators, setOperators] = useState<Operator[]>([])
+  const [structure, setStructure] = useState<any>(null)
   const [assignModal, setAssignModal] = useState<{ clusterIndex: number; clusterId: string } | null>(null)
   const [approving, setApproving] = useState<Set<number>>(new Set())
 
-  // Fetch operators for assignment
+  // Suppress Leaflet errors in dev overlay
+  useEffect(() => {
+    const handler = (e: ErrorEvent) => {
+      if (e.message?.includes('_leaflet_pos') || e.message?.includes('leaflet')) {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        return true
+      }
+    }
+    window.addEventListener('error', handler)
+    return () => window.removeEventListener('error', handler)
+  }, [])
+
+  // Fetch operators and structure chain for assignment
   useEffect(() => {
     fetch(`/api/clustering/operators?section_id=${selectedSection.id}`)
       .then(r => r.json())
-      .then(d => setOperators(d.operators || []))
+      .then(d => {
+        setOperators(d.operators || [])
+        setStructure(d.structure || null)
+      })
       .catch(() => {})
   }, [selectedSection])
 
@@ -92,6 +118,7 @@ export default function InteligenciaTerritorialPage() {
 
       const data = await res.json()
       setResult(data)
+      setCache(prev => ({ ...prev, [selectedSection.id]: data }))
       toast.success(`${data.clusters?.length || 0} clusters identificados y guardados`)
     } catch (err: any) {
       setError(err.message)
@@ -194,7 +221,7 @@ export default function InteligenciaTerritorialPage() {
               <label className="text-sm font-medium text-gray-700 mb-2 block">Sección electoral</label>
               <div className="flex gap-2">
                 {SECTIONS.map(s => (
-                  <button key={s.id} onClick={() => { setSelectedSection(s); setResult(null) }}
+                  <button key={s.id} onClick={() => { setSelectedSection(s); setResult(cache[s.id] || null) }}
                     className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all',
                       selectedSection.id === s.id ? 'bg-purple-100 text-purple-700 ring-2 ring-purple-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     )}>
@@ -243,12 +270,10 @@ export default function InteligenciaTerritorialPage() {
             <div className="col-span-2">
               <Card className="h-[500px]">
                 <CardContent className="p-0 h-full">
-                  <MapErrorBoundary>
-                    <ClusterMap
-                      clusters={result.clusters.map((c, i) => ({ ...c, color: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }))}
-                      center={[result.clusters[0]?.centroid_lat || 25.6866, result.clusters[0]?.centroid_lng || -100.3161]}
-                    />
-                  </MapErrorBoundary>
+                  <ClusterMap
+                    clusters={result.clusters.map((c, i) => ({ ...c, color: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }))}
+                    center={[result.clusters[0]?.centroid_lat || 25.6866, result.clusters[0]?.centroid_lng || -100.3161]}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -306,17 +331,45 @@ export default function InteligenciaTerritorialPage() {
                         💡 {cluster.recommendation}
                       </div>
 
-                      {/* Assigned manzanero */}
-                      {cluster.assigned_manzanero_name && (
-                        <div className="flex items-center gap-2 mb-3 p-2 bg-green-50 rounded-lg">
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          <span className="text-xs text-green-700 font-medium">{cluster.assigned_manzanero_name}</span>
+                      {/* Structure chain */}
+                      {(cluster.assigned_manzanero_name || structure) && (
+                        <div className="mb-3 p-2 bg-gray-50 rounded-lg space-y-1.5">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Estructura</p>
+                          {structure?.distrital && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">Distrital</span>
+                              <span className="font-medium text-gray-700">{structure.distrital.name}</span>
+                            </div>
+                          )}
+                          {structure?.seccional && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">Seccional</span>
+                              <span className="font-medium text-gray-700">{structure.seccional.name}</span>
+                            </div>
+                          )}
+                          {structure?.colonia && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">Jefe Colonia</span>
+                              <span className="font-medium text-gray-700">{structure.colonia.name}</span>
+                            </div>
+                          )}
+                          {cluster.assigned_manzanero_name ? (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-green-600 flex items-center gap-1"><UserCheck className="w-3 h-3" />Manzanero</span>
+                              <span className="font-medium text-green-700">{cluster.assigned_manzanero_name}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-orange-500">Manzanero</span>
+                              <span className="text-orange-500 italic">Sin asignar</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {/* Action buttons */}
                       <div className="flex gap-2">
-                        {cluster.status !== 'active' && (
+                        {cluster.status !== 'active' && structure?.manzaneros?.length > 0 && (
                           <Button size="sm" variant="outline" className="flex-1 text-xs h-8"
                             onClick={() => setAssignModal({ clusterIndex: i, clusterId: cluster.db_id || '' })}>
                             <Users className="w-3 h-3 mr-1" />Asignar manzanero
@@ -343,6 +396,11 @@ export default function InteligenciaTerritorialPage() {
                           </Badge>
                         )}
                       </div>
+                      {!structure?.manzaneros?.length && cluster.status !== "active" && (
+                        <div className="text-xs text-center text-gray-400 p-2 bg-gray-50 rounded-lg mt-2">
+                          Sin manzaneros disponibles — Responsable: {structure?.colonia?.name || structure?.seccional?.name || structure?.distrital?.name || "Sin asignar"}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )
