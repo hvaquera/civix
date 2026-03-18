@@ -19,7 +19,9 @@ import {
   LogOut,
   Map,
   Brain,
-  Sparkles
+  Sparkles,
+  Shield,
+  MessageCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +32,8 @@ const navItems = [
   { href: '/panel/territorial', icon: Map, label: 'Mapa Territorial' },
   { href: '/panel/inteligencia', icon: Brain, label: 'Inteligencia IA' },
   { href: '/panel/copilot', icon: Sparkles, label: 'Copilot Electoral' },
+  { href: '/panel/warroom', icon: Shield, label: 'War Room Día D' },
+  { href: '/panel/campanas', icon: MessageCircle, label: 'Campañas' },
   { href: '/panel/areas', icon: Building2, label: 'Áreas' },
   { href: '/panel/usuarios', icon: Users, label: 'Usuarios' },
   { href: '/panel/configuracion', icon: Settings, label: 'Configuración' },
