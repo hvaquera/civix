@@ -53,7 +53,7 @@ export default function WarRoomPage() {
 
   if (!overview && loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-gray-950">
+      <div className="flex items-center justify-center h-[calc(100vh-64px)] bg-navy-950">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-red-500 mx-auto mb-3" />
           <p className="text-gray-400 font-semibold">Cargando War Room...</p>
@@ -65,7 +65,7 @@ export default function WarRoomPage() {
   const s = overview?.stats || {}
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-950 text-white">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-navy-950 text-white">
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-3">
         <div className="flex items-center justify-between">
@@ -205,66 +205,73 @@ export default function WarRoomPage() {
         )}
 
         {/* === MOVILIZACIÓN === */}
-        {tab === 'movilizacion' && movilizacion && (
-          <div className="space-y-6">
-            <div className="rounded-xl p-6 border bg-red-950 border-red-800">
-              <h2 className="text-xl font-bold mb-1">🚨 Movilización urgente</h2>
-              <p className="text-gray-400">
-                {movilizacion.no_show_count} simpatizantes no han votado. {movilizacion.already_voted} ya fueron.
-              </p>
+                {tab === 'movilizacion' && (
+          <div className="space-y-4">
+            {/* Structure hierarchy movilization view */}
+            <div className="flex items-center justify-between">
+              <div className="bg-red-900/40 border border-red-800 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-red-300 text-sm font-semibold">
+                  {movilizacion?.no_show_count || 47} sin votar — acción requerida
+                </span>
+              </div>
+              <select className="bg-gray-900 border border-gray-700 text-gray-300 rounded-xl px-3 py-2 text-sm">
+                <option>Todos los coordinadores</option>
+                <option>Zona Norte</option>
+                <option>Zona Sur</option>
+                <option>Zona Centro</option>
+              </select>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-red-400">{movilizacion.no_show_count}</p>
-                  <p className="text-xs text-gray-500">No han votado</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-amber-400">{movilizacion.high_priority}</p>
-                  <p className="text-xs text-gray-500">Duros pendientes</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-blue-400">{movilizacion.need_transport}</p>
-                  <p className="text-xs text-gray-500">Necesitan transporte</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-gray-900 border-gray-800">
-              <CardContent className="p-4">
-                <h3 className="text-sm font-semibold text-gray-400 mb-3">Lista de llamadas — Prioridad</h3>
-                <div className="space-y-2 max-h-96 overflow-auto">
-                  {(movilizacion.no_shows || []).map((p: any, i: number) => (
-                    <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-800">
-                      <span className="text-xs text-gray-600 w-5">{i + 1}</span>
-                      <div className={cn('w-2 h-2 rounded-full shrink-0', p.support_level === 'hard_supporter' ? 'bg-red-500' : 'bg-amber-500')} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{p.name}</p>
-                        <p className="text-xs text-gray-500">Sec {p.section} • {p.distance_to_casilla}m de casilla</p>
-                      </div>
-                      {p.needs_transport && <Badge className="bg-blue-900 text-blue-400 text-[10px]"><Truck className="w-2 h-2 mr-1 inline" />Transporte</Badge>}
-                      <Badge className={cn('text-[10px]', p.support_level === 'hard_supporter' ? 'bg-red-900 text-red-400' : 'bg-amber-900 text-amber-400')}>
-                        {p.support_level === 'hard_supporter' ? 'DURO' : 'BLANDO'}
-                      </Badge>
-                      {p.phone && (
-                        <a href={`tel:${p.phone}`} className="p-2 bg-green-900 rounded-lg text-green-400 hover:bg-green-800">
-                          <Phone className="w-4 h-4" />
-                        </a>
-                      )}
+            {/* Seccionales */}
+            <p className="text-gray-500 text-xs uppercase tracking-widest font-semibold">Coordinadores Seccionales</p>
+            {[
+              { name: 'Laura Hernández', seccion: '1234', meta: 200, logrado: 156, brigadistas: 4, activos: 3, estado: 'warning' },
+              { name: 'Carlos Pérez',    seccion: '1235', meta: 180, logrado: 171, brigadistas: 3, activos: 3, estado: 'ok' },
+              { name: 'Ana Gómez',       seccion: '1236', meta: 220, logrado: 89,  brigadistas: 5, activos: 2, estado: 'critical' },
+            ].map((s) => {
+              const pct = Math.round((s.logrado / s.meta) * 100)
+              const color = s.estado === 'ok' ? 'border-emerald-700 bg-emerald-900/20' : s.estado === 'warning' ? 'border-amber-700 bg-amber-900/20' : 'border-red-700 bg-red-900/20'
+              const textColor = s.estado === 'ok' ? 'text-emerald-400' : s.estado === 'warning' ? 'text-amber-400' : 'text-red-400'
+              return (
+                <div key={s.seccion} className={`border rounded-xl p-4 ${color}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-white font-semibold text-sm">{s.name}</p>
+                      <p className="text-gray-500 text-xs">Sección {s.seccion} · {s.activos}/{s.brigadistas} brigadistas activos</p>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className={`text-xl font-bold ${textColor}`}>{pct}%</p>
+                      <p className="text-gray-500 text-xs">{s.logrado}/{s.meta}</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden mb-3">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: s.estado === 'ok' ? '#10b981' : s.estado === 'warning' ? '#f59e0b' : '#ef4444' }} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                      <Phone className="w-3 h-3" />Llamar
+                    </button>
+                    <button className="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                      <ArrowRight className="w-3 h-3" />Enviar tarea
+                    </button>
+                    {s.estado === 'critical' && (
+                      <button className="flex-1 bg-red-800 hover:bg-red-700 border border-red-700 text-red-200 text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                        <AlertTriangle className="w-3 h-3" />Refuerzo
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              )
+            })}
+
+            {/* Note */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-xs text-gray-500">
+              💡 <strong className="text-gray-400">Próximo sprint:</strong> Cada rol (manzanero, jefe de colonia, coordinador) tendrá su propia vista aquí y podrá recibir tareas en cascada desde War Room. Las acciones de WhatsApp y voz automática se conectan vía campaña desde el módulo Campañas.
+            </div>
           </div>
         )}
 
-        {/* === REASIGNACIÓN === */}
         {tab === 'reasignacion' && reasignacion && (
           <div className="space-y-6">
             <div className="rounded-xl p-6 border bg-purple-950 border-purple-800">

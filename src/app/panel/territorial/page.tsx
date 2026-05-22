@@ -230,7 +230,7 @@ export default function TerritorialPage() {
                   onClick={() => setColorBy(key as any)}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     colorBy === key
-                      ? 'bg-civix-600 text-white'
+                      ? 'bg-navy-900 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >

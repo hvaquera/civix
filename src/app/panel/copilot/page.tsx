@@ -207,7 +207,7 @@ export default function CopilotPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn('max-w-[80%] rounded-2xl px-4 py-3',
-                    msg.role === 'user' ? 'bg-civix-500 text-white' : 'bg-white border border-gray-200 shadow-sm')}>
+                    msg.role === 'user' ? 'bg-navy-900 text-white' : 'bg-white border border-gray-200 shadow-sm')}>
                     {msg.role === 'assistant' && (
                       <div className="flex items-center gap-2 mb-2">
                         <Brain className="w-4 h-4 text-purple-500" />

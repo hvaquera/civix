@@ -130,6 +130,15 @@ export default function IssuesPage() {
     setCreateForm({ title: '', category: '', colonia: '' })
   }
 
+
+ const filteredIssues = mockIssues.filter(issue => {
+  const q = search.toLowerCase()
+  if (q && !issue.title.toLowerCase().includes(q) && !issue.colonia.toLowerCase().includes(q)) return false
+  if (filter === 'activos' && issue.status === 'resuelto') return false
+  if (filter === 'resueltos' && issue.status !== 'resuelto') return false
+  return true
+})
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -206,6 +215,7 @@ export default function IssuesPage() {
                 placeholder="Buscar por título, colonia..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm"
               />
             </div>
@@ -218,7 +228,7 @@ export default function IssuesPage() {
                 className={cn(
                   'px-3 py-2 rounded-lg text-sm font-medium',
                   filter === f 
-                    ? 'bg-civix-500 text-white' 
+                    ? 'bg-navy-900 text-white' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 )}
               >
@@ -231,7 +241,7 @@ export default function IssuesPage() {
 
       {/* Issues list */}
       <div className="space-y-4">
-        {mockIssues.map((issue) => (
+        {filteredIssues.map((issue) => (
           <Link key={issue.id} href={`/panel/issues/${issue.id}`}>
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-start gap-4">

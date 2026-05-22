@@ -97,7 +97,7 @@ export default function CampoConfirmarPage() {
         {peticion.text && <Card><CardContent className="p-4">
           <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-gray-900 flex items-center gap-2"><FileText className="w-4 h-4 text-civix-500" />Petición</h3><button onClick={() => router.push('/campo/registro/peticion')} className="text-civix-600"><Edit2 className="w-4 h-4" /></button></div>
           <p className="text-sm text-gray-700 mb-2">{peticion.text}</p>
-          {peticion.categories?.length > 0 && <div className="flex flex-wrap gap-1 mb-2">{peticion.categories.map((c: string) => <Badge key={c} variant="gray" className="text-xs">{c}</Badge>)}</div>}
+          {peticion.categories?.length > 0 && <div className="flex flex-wrap gap-1 mb-2">{peticion.categories.map((c: string) => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}</div>}
           {peticion.urgency && <Badge className={cn('text-xs', peticion.urgency === 'alta' ? 'bg-red-100 text-red-700' : peticion.urgency === 'media' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700')}>Urgencia: {peticion.urgency}</Badge>}
         </CardContent></Card>}
 

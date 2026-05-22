@@ -124,6 +124,8 @@ function ReportesContent() {
   const [areaFilter, setAreaFilter] = useState('all')
   const [slaFilter, setSlaFilter] = useState(initSla)
   const [selectedReports, setSelectedReports] = useState<string[]>([])
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -150,6 +152,9 @@ function ReportesContent() {
     if (statusFilter !== 'all' && report.internalStatus !== statusFilter) return false
     if (categoryFilter !== 'all' && report.category.toLowerCase() !== categoryFilter) return false
     if (slaFilter !== 'all' && report.slaStatus !== slaFilter) return false
+    if (areaFilter !== 'all' && report.area && !report.area.toLowerCase().includes(areaFilter)) return false
+    if (dateFrom && report.created_at < dateFrom) return false
+    if (dateTo && report.created_at > dateTo + 'T23:59:59Z') return false
     return true
   })
 
@@ -162,9 +167,16 @@ function ReportesContent() {
           <p className="text-gray-500">{filteredReports.length} reportes encontrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+          <Button variant="outline" size="sm" onClick={() => {
+            const headers = ['Folio','Categoría','Colonia','Dirección','Estado','Área','Responsable','SLA','Creado']
+            const rows = filteredReports.map(r => [r.folio, r.category, r.colonia, r.address, r.internalStatus, r.area||'', r.assignee||'', r.slaStatus, r.created_at.split('T')[0]])
+            const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+            const blob = new Blob([csv], { type: 'text/csv' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a'); a.href = url; a.download = 'reportes-civix.csv'; a.click()
+            URL.revokeObjectURL(url)
+          }}>
+            <Download className="w-4 h-4 mr-2" />Exportar CSV
           </Button>
         </div>
       </div>
@@ -246,16 +258,13 @@ function ReportesContent() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
-              <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
-              <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Colonia</label>
-              <input type="text" placeholder="Filtrar por colonia" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-            </div>
+
           </div>
         )}
       </Card>

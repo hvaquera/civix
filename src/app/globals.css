@@ -5,242 +5,183 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
+    --popover-foreground: 222 47% 8%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
     --radius: 0.75rem;
   }
-
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 14%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 14%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 48%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 239 84% 67%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  
+  * { @apply border-border; }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
   }
-  
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  /* Hide scrollbar but keep functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+  html { scroll-behavior: smooth; }
 }
 
-@layer components {
-  /* Status badges */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-  
-  /* Card hover effect */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
-  }
-  
-  /* Focus ring */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
-  }
-  
-  /* Gradient backgrounds */
-  .gradient-civix {
-    @apply bg-gradient-to-r from-civix-500 to-civix-600;
-  }
-  
-  /* Safe area for mobile */
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
-  
-  /* Bottom navigation */
-  .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-bottom;
-  }
-  
-  /* Panel sidebar */
-  .sidebar {
-    @apply fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col;
-  }
-  
-  /* Drawer animations */
-  .drawer-overlay {
-    @apply fixed inset-0 bg-black/50 z-40;
-  }
-  
-  .drawer-content {
-    @apply fixed right-0 top-0 h-full bg-white z-50 shadow-xl;
-  }
-  
-  /* Table styles */
-  .table-header-sticky {
-    @apply sticky top-0 bg-white z-10;
-  }
-  
-  /* Form field */
-  .form-field {
-    @apply space-y-1.5;
-  }
-  
-  .form-label {
-    @apply text-sm font-medium text-gray-700;
-  }
-  
-  .form-input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
-           placeholder:text-gray-400
-           focus:outline-none focus:ring-2 focus:ring-civix-500 focus:border-transparent
-           disabled:bg-gray-100 disabled:cursor-not-allowed;
-  }
-  
-  .form-error {
-    @apply text-sm text-red-600;
-  }
-  
-  /* Button variants */
-  .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
-           transition-colors duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  
-  .btn-primary {
-    @apply btn bg-civix-500 text-white hover:bg-civix-600;
-  }
-  
-  .btn-secondary {
-    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200;
-  }
-  
-  .btn-ghost {
-    @apply btn bg-transparent text-gray-600 hover:bg-gray-100;
-  }
-  
-  .btn-danger {
-    @apply btn bg-red-500 text-white hover:bg-red-600;
-  }
-  
-  /* Loading skeleton */
-  .skeleton {
-    @apply animate-pulse bg-gray-200 rounded;
-  }
-  
-  /* Toast styles */
-  .toast {
-    @apply fixed bottom-20 left-4 right-4 mx-auto max-w-sm
-           bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg
-           flex items-center gap-3;
-  }
+/* ── Scrollbar ── */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── Safe areas ── */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+
+/* ── Bottom nav ── */
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-bottom z-40;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.95);
 }
 
-@layer utilities {
-  /* Text balance for headings */
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  /* Truncate multiple lines */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  /* Touch manipulation */
-  .touch-manipulation {
-    touch-action: manipulation;
-  }
-  
-  /* Prevent text selection */
-  .no-select {
-    user-select: none;
-    -webkit-user-select: none;
-  }
+/* ── Cards ── */
+.card-lift {
+  @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99];
 }
 
-/* PWA specific */
+/* ── Status chips — unified sizes ── */
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+.chip-success { @apply chip bg-emerald-50 text-emerald-700; }
+.chip-warning { @apply chip bg-amber-50  text-amber-700; }
+.chip-danger  { @apply chip bg-red-50    text-red-700; }
+.chip-info    { @apply chip bg-blue-50   text-blue-700; }
+.chip-purple  { @apply chip bg-violet-50 text-violet-700; }
+.chip-gray    { @apply chip bg-gray-100  text-gray-600; }
+.chip-navy    { @apply chip bg-navy-900  text-white; }
+
+/* ── Focus ring ── */
+.focus-ring { @apply focus:outline-none focus:ring-2 focus:ring-civix-500 focus:ring-offset-1; }
+
+/* ── Gradient accent bar (top of screen) ── */
+.accent-bar {
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
+}
+
+/* ── Dark hero header (used in campo login, INE capture) ── */
+.hero-dark { @apply bg-navy-900; }
+
+/* ── Sidebar panel ── */
+.panel-sidebar {
+  @apply fixed left-0 top-0 h-full bg-navy-900 z-50 flex flex-col;
+  width: 240px;
+}
+
+/* ── Topbar unified height ── */
+.topbar { @apply h-14 flex items-center px-4 gap-3; }
+
+/* ── Progress bar thin ── */
+.progress-thin {
+  @apply h-1 bg-gray-100 rounded-full overflow-hidden;
+}
+.progress-thin-fill {
+  @apply h-full bg-civix-500 rounded-full transition-all duration-500;
+}
+
+/* ── Skeleton loader ── */
+.skeleton { @apply animate-pulse bg-gray-100 rounded-lg; }
+
+/* ── Input field unified ── */
+.field-input {
+  @apply w-full h-11 px-3 rounded-xl border border-gray-200 bg-gray-50 text-sm
+         placeholder:text-gray-400 text-gray-900
+         focus:outline-none focus:ring-2 focus:ring-civix-500 focus:border-transparent focus:bg-white
+         disabled:opacity-50 disabled:cursor-not-allowed
+         transition-colors;
+}
+.field-input-error { @apply field-input border-red-400 bg-red-50 focus:ring-red-400; }
+
+/* ── Toggle switch ── */
+.toggle-track {
+  @apply relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer;
+}
+.toggle-thumb {
+  @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200;
+}
+
+/* ── Section label ── */
+.section-label {
+  @apply text-xs font-semibold text-gray-400 uppercase tracking-widest;
+}
+
+/* ── Map container ── */
+.leaflet-container { font-family: inherit; }
+.leaflet-popup-content-wrapper { @apply rounded-xl shadow-lg; }
+
+/* ── WhatsApp thread bubble ── */
+.wa-bubble-out {
+  @apply bg-civix-500 text-white rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[80%] self-end text-sm;
+}
+.wa-bubble-in {
+  @apply bg-white border border-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2.5 max-w-[80%] self-start text-sm shadow-sm;
+}
+
+/* ── War room dark mode override ── */
+.warroom-bg { background: #020617; }
+.warroom-card { @apply bg-navy-900 border border-navy-800 rounded-2xl; }
+
+/* ── Gamification badge ── */
+.xp-badge {
+  @apply inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+}
+
+/* ── Promise tag (promesas de campaña) ── */
+.promise-pending    { @apply bg-amber-50  border border-amber-200  text-amber-800; }
+.promise-fulfilled  { @apply bg-emerald-50 border border-emerald-200 text-emerald-800; }
+.promise-overdue    { @apply bg-red-50    border border-red-200    text-red-800; }
+
+/* ── PWA standalone ── */
 @media (display-mode: standalone) {
-  body {
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  
-  .pwa-topbar {
-    padding-top: env(safe-area-inset-top);
-  }
+  body { -webkit-user-select: none; user-select: none; }
+  .pwa-top { padding-top: env(safe-area-inset-top); }
 }
 
-/* Leaflet map overrides */
-.leaflet-container {
-  font-family: inherit;
-}
+/* ── Print ── */
+@media print { .no-print { display: none !important; } }
 
-.leaflet-popup-content-wrapper {
-  @apply rounded-lg shadow-lg;
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
+/* ── Responsive max width for mobile-first panels ── */
+@media (min-width: 1024px) {
+  .panel-sidebar { position: sticky; top: 0; height: 100vh; }
 }

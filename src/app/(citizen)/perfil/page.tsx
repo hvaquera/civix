@@ -1,253 +1,191 @@
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, 
-  MapPin, 
-  Bell, 
-  Shield, 
-  HelpCircle,
-  FileText,
-  ChevronRight,
-  LogOut,
-  Phone,
-  Mail,
-  CheckCircle,
-  Settings
-} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { User, MapPin, Bell, Shield, HelpCircle, FileText, ChevronRight, LogOut, Phone, Mail, CheckCircle, Settings, Star, Flame, Trophy, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Mock user data
 const mockUser = {
-  name: 'Juan',
-  last_name_1: 'García',
-  last_name_2: 'López',
-  contact_method: 'whatsapp',
-  contact_value: '8112345678',
-  colonia: 'Centro',
-  municipio: 'Monterrey',
-  estado: 'Nuevo León',
-  seccion_electoral: '1234',
-  verified: true,
-  reports_count: 5,
-  resolved_count: 3,
+  name: 'Juan García López', contact_method: 'whatsapp', contact_value: '8112345678',
+  colonia: 'Centro', municipio: 'Monterrey', estado: 'Nuevo León',
+  seccion_electoral: '1234', verified: true,
+  reports_count: 5, resolved_count: 3,
+  xp: 320, level: 3, streak: 5, rank: 12,
+  badges: ['Primer reporte', 'Participante activo', 'Colonia limpia'],
 }
 
-interface MenuItemProps {
-  icon: any
-  label: string
-  description?: string
-  onClick?: () => void
-  href?: string
-  badge?: string
-  danger?: boolean
-}
-
-function MenuItem({ icon: Icon, label, description, onClick, badge, danger }: MenuItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left',
-        danger && 'text-red-600'
-      )}
-    >
-      <div className={cn(
-        'p-2 rounded-lg',
-        danger ? 'bg-red-100' : 'bg-gray-100'
-      )}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className={cn(
-          'font-medium',
-          danger ? 'text-red-600' : 'text-gray-900'
-        )}>
-          {label}
-        </p>
-        {description && (
-          <p className="text-sm text-gray-500 truncate">{description}</p>
-        )}
-      </div>
-      {badge && (
-        <Badge variant="info" className="mr-2">{badge}</Badge>
-      )}
-      <ChevronRight className="w-5 h-5 text-gray-300" />
-    </button>
-  )
-}
+const menuSections = [
+  {
+    title: 'Mi cuenta',
+    items: [
+      { icon: Phone, label: 'Método de contacto', desc: 'WhatsApp · ****5678', href: null },
+      { icon: MapPin, label: 'Domicilio verificado', desc: 'Centro, Monterrey', href: null },
+    ],
+  },
+  {
+    title: 'Preferencias',
+    items: [
+      { icon: Bell, label: 'Notificaciones', desc: 'Configura alertas', href: '/notificaciones' },
+      { icon: Shield, label: 'Privacidad', desc: 'Controla tus datos', href: '/privacidad' },
+    ],
+  },
+  {
+    title: 'Soporte',
+    items: [
+      { icon: HelpCircle, label: 'Preguntas frecuentes', desc: 'Respuestas rápidas', href: '/ayuda' },
+      { icon: Settings, label: 'Contactar soporte', desc: 'WhatsApp, correo o ticket', href: '/soporte' },
+      { icon: FileText, label: 'Términos y privacidad', desc: null, href: '/terminos' },
+    ],
+  },
+]
 
 export default function PerfilPage() {
   const router = useRouter()
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showLogout, setShowLogout] = useState(false)
 
-  const handleLogout = () => {
-    // TODO: Clear session
-    router.push('/onboarding')
-  }
-
-  const maskedContact = mockUser.contact_method === 'whatsapp'
-    ? `****${mockUser.contact_value.slice(-4)}`
-    : mockUser.contact_value.replace(/^(.{2}).*(@.*)$/, '$1****$2')
+  const xpPct = Math.round(((mockUser.xp % 500) / 500) * 100)
+  const xpNext = 500 - (mockUser.xp % 500)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <div className="bg-civix-600 text-white px-6 pt-12 pb-8">
-        <h1 className="text-xl font-bold mb-6">Mi perfil</h1>
-        
-        {/* User card */}
-        <Card className="bg-white text-gray-900 p-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-civix-100 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-civix-600" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">
-                  {mockUser.name} {mockUser.last_name_1}
-                </h2>
-                {mockUser.verified && (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <MapPin className="w-4 h-4" />
-                <span>{mockUser.colonia}, {mockUser.municipio}</span>
-              </div>
-            </div>
-          </div>
+      {/* Hero */}
+      <div className="bg-navy-900 px-5 pt-12 pb-6">
+        <h1 className="text-xl font-bold text-white mb-4">Mi perfil</h1>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-civix-600">{mockUser.reports_count}</p>
-              <p className="text-xs text-gray-500">Reportes creados</p>
+        {/* User card */}
+        <Card className="shadow-none border-0">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 bg-civix-100 rounded-2xl flex items-center justify-center">
+                <User className="w-7 h-7 text-civix-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="font-bold text-gray-900">{mockUser.name}</h2>
+                  {mockUser.verified && <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-400 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5" />{mockUser.colonia}, {mockUser.municipio}
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-400">Rango</p>
+                <p className="text-sm font-bold text-civix-600">#{mockUser.rank}</p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{mockUser.resolved_count}</p>
-              <p className="text-xs text-gray-500">Resueltos</p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+              <div className="bg-gray-50 rounded-xl p-2.5">
+                <p className="text-xl font-bold text-gray-900">{mockUser.reports_count}</p>
+                <p className="text-xs text-gray-400">Reportes</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-2.5">
+                <p className="text-xl font-bold text-emerald-600">{mockUser.resolved_count}</p>
+                <p className="text-xs text-gray-400">Resueltos</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-2.5">
+                <div className="flex items-center justify-center gap-1">
+                  <Flame className="w-4 h-4 text-amber-500" />
+                  <p className="text-xl font-bold text-amber-600">{mockUser.streak}</p>
+                </div>
+                <p className="text-xs text-gray-400">Días racha</p>
+              </div>
             </div>
-          </div>
+
+            {/* XP bar */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <div className="flex items-center gap-1 text-civix-600 font-semibold">
+                  <Star className="w-3.5 h-3.5" />Nivel {mockUser.level} · {mockUser.xp} XP
+                </div>
+                <span className="text-gray-400">{xpNext} XP para nivel {mockUser.level + 1}</span>
+              </div>
+              <div className="progress-thin">
+                <div className="progress-thin-fill" style={{ width: `${xpPct}%` }} />
+              </div>
+            </div>
+          </CardContent>
         </Card>
+      </div>
+
+      {/* Badges */}
+      <div className="px-4 mt-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Trophy className="w-4 h-4 text-amber-500" />
+          <p className="text-sm font-semibold text-gray-700">Mis logros</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {mockUser.badges.map((b) => (
+            <span key={b} className="xp-badge">
+              <Trophy className="w-3 h-3" />{b}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Menu sections */}
-      <div className="px-4 py-4 space-y-4">
-        {/* Account section */}
+      <div className="px-4 mt-4 space-y-3">
+        {menuSections.map((section) => (
+          <div key={section.title}>
+            <p className="section-label mb-2 px-1">{section.title}</p>
+            <Card className="overflow-hidden">
+              <div className="divide-y divide-gray-50">
+                {section.items.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => item.href && router.push(item.href)}
+                    className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+                  >
+                    <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                      {item.desc && <p className="text-xs text-gray-400 truncate">{item.desc}</p>}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </Card>
+          </div>
+        ))}
+
         <Card className="overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b">
-            <h3 className="text-sm font-medium text-gray-500">Mi cuenta</h3>
-          </div>
-          <div className="divide-y">
-            <MenuItem
-              icon={mockUser.contact_method === 'whatsapp' ? Phone : Mail}
-              label="Método de contacto"
-              description={`${mockUser.contact_method === 'whatsapp' ? 'WhatsApp' : 'Correo'} • ${maskedContact}`}
-              onClick={() => {}}
-            />
-            <MenuItem
-              icon={MapPin}
-              label="Domicilio verificado"
-              description={`${mockUser.colonia}, ${mockUser.municipio}`}
-              onClick={() => {}}
-            />
-          </div>
+          <button
+            onClick={() => setShowLogout(true)}
+            className="w-full flex items-center gap-3 p-4 hover:bg-red-50 transition-colors text-left"
+          >
+            <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <LogOut className="w-4 h-4 text-red-500" />
+            </div>
+            <p className="text-sm font-medium text-red-600">Cerrar sesión</p>
+          </button>
         </Card>
 
-        {/* Preferences section */}
-        <Card className="overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b">
-            <h3 className="text-sm font-medium text-gray-500">Preferencias</h3>
-          </div>
-          <div className="divide-y">
-            <MenuItem
-              icon={Bell}
-              label="Notificaciones"
-              description="Configura cómo te avisamos"
-              onClick={() => router.push('/notificaciones')}
-            />
-            <MenuItem
-              icon={Shield}
-              label="Privacidad"
-              description="Controla tus datos"
-              onClick={() => router.push('/privacidad')}
-            />
-          </div>
-        </Card>
-
-        {/* Support section */}
-        <Card className="overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b">
-            <h3 className="text-sm font-medium text-gray-500">Soporte</h3>
-          </div>
-          <div className="divide-y">
-            <MenuItem
-              icon={HelpCircle}
-              label="Preguntas frecuentes"
-              description="Respuestas rápidas"
-              onClick={() => router.push('/ayuda')}
-            />
-            <MenuItem
-              icon={Settings}
-              label="Contactar soporte"
-              description="WhatsApp, correo o ticket"
-              onClick={() => router.push('/soporte')}
-            />
-            <MenuItem
-              icon={FileText}
-              label="Términos y privacidad"
-              onClick={() => router.push('/terminos')}
-            />
-          </div>
-        </Card>
-
-        {/* Logout */}
-        <Card className="overflow-hidden">
-          <MenuItem
-            icon={LogOut}
-            label="Cerrar sesión"
-            onClick={() => setShowLogoutConfirm(true)}
-            danger
-          />
-        </Card>
-
-        {/* Version */}
-        <p className="text-center text-xs text-gray-400 pt-4">
-          CIVIX v0.1.0
-        </p>
+        <p className="text-center text-xs text-gray-300 pt-2">CIVIX v2.0.0</p>
       </div>
 
-      {/* Logout confirmation modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <Card className="w-full max-w-sm p-6 animate-slide-in-from-bottom">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              ¿Cerrar sesión?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Tendrás que volver a verificarte para usar la app.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowLogoutConfirm(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleLogout}
-              >
-                Cerrar sesión
-              </Button>
-            </div>
+      {/* Logout modal */}
+      {showLogout && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm shadow-2xl animate-scale-in">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-900">¿Cerrar sesión?</h3>
+                <button onClick={() => setShowLogout(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-5">Tendrás que volverte a verificar para usar la app.</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="md" className="flex-1" onClick={() => setShowLogout(false)}>Cancelar</Button>
+                <Button variant="destructive" size="md" className="flex-1" onClick={() => router.push('/onboarding')}>Salir</Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}

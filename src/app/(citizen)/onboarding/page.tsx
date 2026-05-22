@@ -1,115 +1,78 @@
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, MapPin, Bell, CheckCircle } from 'lucide-react'
+import { MapPin, Bell, CheckCircle, ChevronRight, ArrowRight } from 'lucide-react'
 
 const slides = [
   {
     icon: MapPin,
-    title: 'Reporta problemas en tu colonia',
-    description: 'Baches, alumbrado, basura... Solo toma una foto y nosotros nos encargamos.',
-    color: 'bg-blue-100',
-    iconColor: 'text-blue-600',
+    emoji: '📍',
+    title: 'Reporta lo que ves en tu colonia',
+    description: 'Baches, alumbrado, basura. Solo una foto y un mensaje, nosotros hacemos el resto.',
+    color: 'bg-civix-50',
+    iconBg: 'bg-civix-500',
   },
   {
     icon: Bell,
-    title: 'Recibe actualizaciones',
-    description: 'Te avisamos cuando tu reporte avance y cuando esté resuelto.',
-    color: 'bg-purple-100',
-    iconColor: 'text-purple-600',
+    emoji: '🔔',
+    title: 'Te avisamos cada vez que avance',
+    description: 'Sabrás exactamente qué área atiende tu reporte y cuándo queda resuelto.',
+    color: 'bg-emerald-50',
+    iconBg: 'bg-emerald-500',
   },
   {
     icon: CheckCircle,
-    title: 'Ve el impacto',
-    description: 'Tu voz importa. Juntos hacemos que el municipio responda.',
-    color: 'bg-green-100',
-    iconColor: 'text-green-600',
+    emoji: '🏆',
+    title: 'Acumula puntos y ve tu impacto',
+    description: 'Gana XP por cada reporte. Juntos construimos una ciudad que responde.',
+    color: 'bg-amber-50',
+    iconBg: 'bg-amber-500',
   },
 ]
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [currentSlide, setCurrentSlide] = useState(0)
-
-  const handleNext = () => {
-    if (currentSlide < slides.length - 1) {
-      setCurrentSlide(currentSlide + 1)
-    } else {
-      // Mark onboarding as seen and go to registro
-      router.push('/registro')
-    }
-  }
-
-  const handleSkip = () => {
-    router.push('/registro')
-  }
-
-  const slide = slides[currentSlide]
-  const isLast = currentSlide === slides.length - 1
+  const [current, setCurrent] = useState(0)
+  const slide = slides[current]
+  const isLast = current === slides.length - 1
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Skip button */}
-      <div className="flex justify-end p-4 pt-6">
-        <button
-          onClick={handleSkip}
-          className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1"
-        >
+      {/* Skip */}
+      <div className="flex justify-end p-5 pt-6">
+        <button onClick={() => router.push('/registro')} className="text-sm text-gray-400 font-medium px-2 py-1">
           Saltar
         </button>
       </div>
 
-      {/* Slide content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="text-center"
-          >
-            {/* Icon */}
-            <div className={`inline-flex p-6 rounded-full ${slide.color} mb-8`}>
-              <slide.icon className={`w-16 h-16 ${slide.iconColor}`} />
-            </div>
-
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-4 text-balance">
-              {slide.title}
-            </h1>
-
-            {/* Description */}
-            <p className="text-gray-600 text-lg leading-relaxed">
-              {slide.description}
-            </p>
-          </motion.div>
-        </AnimatePresence>
+      {/* Slide */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+        <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center mb-8', slide.iconBg)}>
+          <slide.icon className="w-12 h-12 text-white" strokeWidth={1.5} />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4 leading-snug max-w-xs">{slide.title}</h1>
+        <p className="text-gray-500 text-base leading-relaxed max-w-xs">{slide.description}</p>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex justify-center gap-2 mb-6">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              index === currentSlide ? 'bg-civix-500' : 'bg-gray-200'
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Action button - with extra padding for safe area */}
-      <div className="px-6 pt-4 pb-12">
+      {/* Dots + CTA */}
+      <div className="px-6 pb-12 space-y-6">
+        <div className="flex justify-center gap-2">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={cn(
+                'rounded-full transition-all',
+                i === current ? 'w-6 h-2 bg-civix-500' : 'w-2 h-2 bg-gray-200'
+              )}
+            />
+          ))}
+        </div>
         <Button
-          onClick={handleNext}
-          size="lg"
+          size="xl"
           className="w-full"
+          onClick={() => isLast ? router.push('/registro') : setCurrent(current + 1)}
         >
           {isLast ? 'Comenzar' : 'Siguiente'}
           <ChevronRight className="w-5 h-5 ml-1" />
@@ -117,4 +80,8 @@ export default function OnboardingPage() {
       </div>
     </div>
   )
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(' ')
 }

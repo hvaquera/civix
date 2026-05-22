@@ -2,14 +2,14 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Camera, RotateCcw, ChevronLeft, ChevronRight, FileEdit, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { Camera, RotateCcw, ChevronLeft, ChevronRight, FileEdit, Loader2, CheckCircle, AlertCircle, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 type Step = 'front' | 'back' | 'processing' | 'ready'
 
-const compressImage = (file: File, maxSizeMB: number = 4): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const compressImage = (file: File, maxSizeMB = 4): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const img = new Image()
@@ -25,10 +25,7 @@ const compressImage = (file: File, maxSizeMB: number = 4): Promise<string> => {
         canvas.getContext('2d')?.drawImage(img, 0, 0, width, height)
         let quality = 0.8
         let base64 = canvas.toDataURL('image/jpeg', quality)
-        while (base64.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
-          quality -= 0.1
-          base64 = canvas.toDataURL('image/jpeg', quality)
-        }
+        while (base64.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) { quality -= 0.1; base64 = canvas.toDataURL('image/jpeg', quality) }
         resolve(base64)
       }
       img.onerror = reject
@@ -37,102 +34,57 @@ const compressImage = (file: File, maxSizeMB: number = 4): Promise<string> => {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
-}
 
 export default function CampoINEPage() {
   const router = useRouter()
   const frontRef = useRef<HTMLInputElement>(null)
-  const backRef = useRef<HTMLInputElement>(null)
+  const backRef  = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<Step>('front')
   const [frontImage, setFrontImage] = useState<string | null>(null)
-  const [backImage, setBackImage] = useState<string | null>(null)
+  const [backImage,  setBackImage]  = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
 
-  const handleFrontCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleCapture = (side: 'front' | 'back') => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
     if (!file.type.startsWith('image/')) { setError('Solo se aceptan imágenes'); return }
     setError('')
     try {
       const compressed = await compressImage(file)
-      setFrontImage(compressed)
-      setStep('back')
-    } catch { setError('Error procesando imagen') }
-    e.target.value = ''
-  }
-
-  const handleBackCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) { setError('Solo se aceptan imágenes'); return }
-    setError('')
-    try {
-      const compressed = await compressImage(file)
-      setBackImage(compressed)
-      setStep('ready')
+      if (side === 'front') { setFrontImage(compressed); setStep('back') }
+      else { setBackImage(compressed); setStep('ready') }
     } catch { setError('Error procesando imagen') }
     e.target.value = ''
   }
 
   const handleContinue = async () => {
     if (!frontImage) return
-    setProcessing(true)
-    setStep('processing')
-    setError('')
-
+    setProcessing(true); setStep('processing'); setError('')
     try {
-      const response = await fetch('/api/ocr/ine', {
+      const res = await fetch('/api/ocr/ine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ frontImage, backImage }),
       })
-
-      const data = await response.json()
-
-      // Check if image was rejected as non-INE
-      if (response.status === 422 && data.is_valid_ine === false) {
-        setError(`⚠️ ${data.rejection_reason || 'La imagen no parece ser una credencial INE.'} Intenta con una foto clara de tu INE.`)
-        setStep('front')
-        setFrontImage(null)
-        setBackImage(null)
-        return
+      const data = await res.json()
+      if (res.status === 422 && data.is_valid_ine === false) {
+        setError(`⚠️ ${data.rejection_reason || 'La imagen no parece ser una INE.'}`)
+        setStep('front'); setFrontImage(null); setBackImage(null); return
       }
-
-      if (!response.ok) {
-        console.warn('[Campo INE] OCR failed, using mock:', data)
-        const mockOcr = {
-          name: 'MARIA', paternal: 'GARCIA', maternal: 'LOPEZ',
-          street: 'AV SIMON BOLIVAR 320', colonia: 'MITRAS CENTRO', cp: '64460',
-          municipio: 'MONTERREY', estado: 'NUEVO LEON', seccion: '1234',
-          ocr_confidence: { name: 0.95, paternal: 0.92, street: 0.78, seccion: 0.99 },
-        }
-        localStorage.setItem('campo_registro_ine', JSON.stringify(mockOcr))
-        localStorage.setItem('campo_registro_photos', JSON.stringify({ front: !!frontImage, back: !!backImage }))
-        toast.success('Datos extraídos (modo demo)')
-        router.push('/campo/registro/datos')
-        return
-      }
-
-      const ine = data.data
-      const ocrData = {
+      const ine = res.ok ? data.data : null
+      const ocrData = ine ? {
         name: ine.nombre || '', paternal: ine.apellido_paterno || '', maternal: ine.apellido_materno || '',
         street: [ine.calle, ine.numero_exterior].filter(Boolean).join(' ') || '',
-        interior: ine.numero_interior || '', colonia: ine.colonia || '', cp: ine.codigo_postal || '',
+        colonia: ine.colonia || '', cp: ine.codigo_postal || '',
         municipio: ine.municipio || '', estado: ine.estado || '', seccion: ine.seccion || '',
         ocr_confidence: ine.confidence || {},
-      }
+      } : { name: 'MARIA', paternal: 'GARCIA', maternal: 'LOPEZ', street: 'AV SIMON BOLIVAR 320', colonia: 'MITRAS CENTRO', cp: '64460', municipio: 'MONTERREY', estado: 'NUEVO LEON', seccion: '1234', ocr_confidence: { name: 0.95, paternal: 0.92, street: 0.78, seccion: 0.99 } }
       localStorage.setItem('campo_registro_ine', JSON.stringify(ocrData))
-      localStorage.setItem('campo_registro_photos', JSON.stringify({ front: !!frontImage, back: !!backImage }))
-      toast.success('Datos extraídos con IA', { description: `${ine.nombre} ${ine.apellido_paterno} — Sección ${ine.seccion}` })
+      localStorage.setItem('campo_registro_photos', JSON.stringify({ front: true, back: !!backImage }))
+      toast.success(ine ? 'Datos extraídos con IA' : 'Datos extraídos (modo demo)')
       router.push('/campo/registro/datos')
-    } catch (err: any) {
-      console.error('[Campo INE] Error:', err)
-      setError('Error al procesar la INE. Intenta de nuevo.')
-      setStep('ready')
-    } finally {
-      setProcessing(false)
-    }
+    } catch { setError('Error al procesar. Intenta de nuevo.'); setStep('ready') }
+    finally { setProcessing(false) }
   }
 
   const handleManual = () => {
@@ -143,124 +95,145 @@ export default function CampoINEPage() {
 
   if (step === 'processing') {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-navy-950 flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="absolute inset-0 border-4 border-gray-700 rounded-full" />
+          <div className="relative w-16 h-16 mx-auto mb-5">
+            <div className="absolute inset-0 border-4 border-navy-800 rounded-full" />
             <div className="absolute inset-0 border-4 border-civix-500 rounded-full border-t-transparent animate-spin" />
           </div>
-          <h2 className="text-white text-lg font-bold mb-2">Procesando INE con IA</h2>
-          <p className="text-gray-400 text-sm">Extrayendo nombre, domicilio y sección electoral...</p>
+          <h2 className="text-white text-base font-bold mb-1">Procesando INE con IA</h2>
+          <p className="text-navy-400 text-sm">Extrayendo datos...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <div className="p-4 flex items-center justify-between">
-        <button onClick={() => router.push('/campo/home')} className="text-white p-2"><ChevronLeft className="w-5 h-5" /></button>
-        <div className="text-center"><p className="text-white font-semibold">Paso 1 de 4</p><p className="text-gray-400 text-xs">Credencial INE</p></div>
+    <div className="min-h-screen bg-navy-950 flex flex-col">
+      {/* Header — fixed height */}
+      <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center justify-between">
+        <button onClick={() => router.push('/campo/home')} className="p-2 text-navy-400 hover:text-white">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <p className="text-white font-semibold text-sm">Paso 1 de 4</p>
+          <p className="text-navy-500 text-xs">Credencial INE</p>
+        </div>
         <div className="w-9" />
       </div>
-      <div className="px-4 mb-6"><div className="h-1 bg-gray-700 rounded-full"><div className="h-full bg-civix-500 rounded-full transition-all" style={{ width: step === 'front' ? '8%' : step === 'back' ? '16%' : '25%' }} /></div></div>
 
-      <div className="flex-1 px-4 pb-32 flex flex-col items-center justify-center">
-        {/* Step indicator */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', frontImage ? 'bg-green-500 text-white' : step === 'front' ? 'bg-civix-500 text-white' : 'bg-gray-700 text-gray-400')}>
-            {frontImage ? <CheckCircle className="w-4 h-4" /> : '1'}
-          </div>
-          <div className={cn('w-12 h-0.5', frontImage ? 'bg-green-500' : 'bg-gray-700')} />
-          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', backImage ? 'bg-green-500 text-white' : step === 'back' ? 'bg-civix-500 text-white' : 'bg-gray-700 text-gray-400')}>
-            {backImage ? <CheckCircle className="w-4 h-4" /> : '2'}
-          </div>
+      {/* Progress */}
+      <div className="flex-shrink-0 mx-4 mb-4 h-1 bg-navy-800 rounded-full overflow-hidden">
+        <div className="h-full bg-civix-500 rounded-full transition-all duration-500"
+          style={{ width: step === 'front' ? '8%' : step === 'back' ? '16%' : '25%' }} />
+      </div>
+
+      {/* Step indicators */}
+      <div className="flex-shrink-0 flex items-center justify-center gap-4 mb-5">
+        {['Frente', 'Reverso'].map((label, i) => {
+          const done = i === 0 ? !!frontImage : !!backImage
+          const active = (i === 0 && step === 'front') || (i === 1 && (step === 'back' || step === 'ready'))
+          return (
+            <div key={label} className="flex items-center gap-3">
+              <div className="flex flex-col items-center gap-1">
+                <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
+                  done ? 'bg-emerald-500 text-white' : active ? 'bg-civix-500 text-white' : 'bg-navy-800 text-navy-500')}>
+                  {done ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
+                </div>
+                <span className={cn('text-xs', done || active ? 'text-navy-300' : 'text-navy-600')}>{label}</span>
+              </div>
+              {i === 0 && <div className={cn('w-10 h-0.5 mb-4', frontImage ? 'bg-emerald-500' : 'bg-navy-800')} />}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Main content — fills remaining space, no overflow */}
+      <div className="flex-1 flex flex-col px-4 min-h-0">
+
+        {/* Title */}
+        <div className="text-center mb-4 flex-shrink-0">
+          <h2 className="text-white text-base font-bold">
+            {step === 'front' ? 'Frente del INE' : step === 'back' ? 'Reverso del INE' : '¡INE completa!'}
+          </h2>
+          <p className="text-navy-400 text-xs mt-0.5">
+            {step === 'front' ? 'Foto clara, buena iluminación' : step === 'back' ? 'Voltea la credencial' : 'Lista para extraer datos con IA'}
+          </p>
         </div>
 
-        {/* FRONT step */}
-        {step === 'front' && (
-          <div className="w-full max-w-sm">
-            <h2 className="text-white text-lg font-bold text-center mb-2">Frente del INE</h2>
-            <p className="text-gray-400 text-sm text-center mb-6">Foto clara del frente de la credencial</p>
-            <button onClick={() => frontRef.current?.click()} className="w-full aspect-[1.6/1] border-2 border-dashed border-gray-600 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-civix-500 hover:text-civix-400 transition-colors">
-              <Camera className="w-10 h-10 mb-3" /><span className="text-sm font-medium">Tomar foto del frente</span>
-            </button>
-          </div>
+        {/* Card capture area — max height to prevent overflow */}
+        {(step === 'front' || step === 'back') && (
+          <button
+            onClick={() => step === 'front' ? frontRef.current?.click() : backRef.current?.click()}
+            className="flex-1 max-h-52 w-full border-2 border-dashed border-navy-700 rounded-2xl flex flex-col items-center justify-center gap-3 text-navy-500 hover:border-civix-500 hover:text-civix-400 transition-colors"
+          >
+            <Camera className="w-10 h-10" />
+            <span className="text-sm font-medium">Tomar foto</span>
+            <span className="text-xs text-navy-600">O seleccionar de galería</span>
+          </button>
         )}
 
-        {/* BACK step */}
-        {step === 'back' && (
-          <div className="w-full max-w-sm">
-            {frontImage && (
-              <div className="mb-4">
-                <p className="text-green-400 text-xs mb-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Frente capturado</p>
-                <img src={frontImage} alt="Frente" className="w-full aspect-[1.6/1] object-cover rounded-xl opacity-50" />
-              </div>
-            )}
-            <h2 className="text-white text-lg font-bold text-center mb-2">Reverso del INE</h2>
-            <p className="text-gray-400 text-sm text-center mb-6">Voltea la credencial y toma el reverso</p>
-            <button onClick={() => backRef.current?.click()} className="w-full aspect-[1.6/1] border-2 border-dashed border-gray-600 rounded-2xl flex flex-col items-center justify-center text-gray-400 hover:border-civix-500 hover:text-civix-400 transition-colors">
-              <Camera className="w-10 h-10 mb-3" /><span className="text-sm font-medium">Tomar foto del reverso</span>
-            </button>
-          </div>
-        )}
-
-        {/* READY step */}
+        {/* Ready — thumbnails side by side, compact */}
         {step === 'ready' && (
-          <div className="w-full max-w-sm">
-            <div className="text-center mb-6">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <h2 className="text-white text-lg font-bold">INE completa</h2>
-              <p className="text-gray-400 text-sm mt-1">Listo para extraer datos con IA</p>
+          <div className="flex-1 min-h-0">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <CheckCircle className="w-8 h-8 text-emerald-500" />
+              <span className="text-white font-bold">INE lista para procesar</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-gray-500 text-xs mb-1">Frente</p>
-                <div className="relative rounded-xl overflow-hidden">
-                  <img src={frontImage!} alt="Frente" className="w-full aspect-[1.6/1] object-cover" />
-                  <button onClick={() => { setFrontImage(null); setBackImage(null); setStep('front') }} className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-full text-white"><RotateCcw className="w-3 h-3" /></button>
+              {[
+                { label: 'Frente', img: frontImage, onRetake: () => { setFrontImage(null); setBackImage(null); setStep('front') } },
+                { label: 'Reverso', img: backImage, onRetake: () => { setBackImage(null); setStep('back') } }
+              ].map((side) => (
+                <div key={side.label}>
+                  <p className="text-navy-500 text-xs mb-1">{side.label}</p>
+                  <div className="relative rounded-xl overflow-hidden bg-navy-800">
+                    {side.img
+                      ? <img src={side.img} alt={side.label} className="w-full aspect-[1.6/1] object-cover" />
+                      : <div className="w-full aspect-[1.6/1] flex items-center justify-center text-navy-600 text-xs">No capturado</div>
+                    }
+                    {side.img && (
+                      <button onClick={side.onRetake} className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 rounded-full text-white">
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs mb-1">Reverso</p>
-                <div className="relative rounded-xl overflow-hidden">
-                  <img src={backImage!} alt="Reverso" className="w-full aspect-[1.6/1] object-cover" />
-                  <button onClick={() => { setBackImage(null); setStep('back') }} className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-full text-white"><RotateCcw className="w-3 h-3" /></button>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Hidden inputs — SEPARATE refs */}
-        <input ref={frontRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFrontCapture} />
-        <input ref={backRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBackCapture} />
+        {/* Hidden inputs */}
+        <input ref={frontRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture('front')} />
+        <input ref={backRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture('back')} />
 
         {error && (
-          <div className="mt-4 w-full max-w-sm flex items-center gap-2 p-3 bg-red-500/20 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" /><p className="text-red-200 text-sm">{error}</p>
+          <div className="flex-shrink-0 mt-3 flex items-start gap-2 p-3 bg-red-950/60 border border-red-900 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-300 text-xs">{error}</p>
           </div>
         )}
 
-        <button onClick={handleManual} className="mt-8 flex items-center justify-center gap-2 text-gray-500 hover:text-gray-300">
-          <FileEdit className="w-4 h-4" /><span className="text-sm">Captura manual sin INE</span>
+        <button onClick={handleManual} className="flex-shrink-0 flex items-center justify-center gap-2 text-navy-600 hover:text-navy-400 transition-colors mx-auto mt-4 mb-2">
+          <FileEdit className="w-3.5 h-3.5" /><span className="text-xs">Captura manual sin INE</span>
         </button>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 border-t border-gray-800">
+      {/* Bottom CTA — fixed */}
+      <div className="flex-shrink-0 bg-navy-950 border-t border-navy-800 p-4 space-y-2 safe-bottom">
+        <p className="text-xs text-navy-600 text-center flex items-center justify-center gap-1">
+          <Lock className="w-3 h-3" />Tu INE se procesa con IA y no se almacena
+        </p>
         {step === 'ready' ? (
-          <Button className="w-full h-12 text-base" onClick={handleContinue}>
-            Continuar<ChevronRight className="w-4 h-4 ml-2" />
+          <Button size="lg" className="w-full" onClick={handleContinue}>
+            Continuar <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         ) : (
-          <Button className="w-full h-12 text-base" disabled variant="outline">
+          <Button size="lg" className="w-full" disabled variant="secondary">
             {step === 'front' ? 'Captura el frente para continuar' : 'Captura el reverso para continuar'}
           </Button>
         )}
-      </div>
-
-      <div className="fixed bottom-20 left-0 right-0 text-center">
-        <p className="text-xs text-white/30">Tu INE se procesa con IA y no se almacena</p>
       </div>
     </div>
   )
